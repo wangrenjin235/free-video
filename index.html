@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全网视频解析播放器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6d28d9;
+            --primary-light: #8b5cf6;
+            --primary-dark: #5b21b6;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent: #0ea5e9;
+            --accent-light: #38bdf8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #475569;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "Segoe UI", sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                padding: 24px;
+            }
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 24px 16px;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 40px rgba(109, 40, 217, 0.3);
+        }
+
+        @media (min-width: 768px) {
+            header {
+                padding: 32px 24px;
+                margin-bottom: 24px;
+                border-radius: 16px;
+            }
+        }
+
+        header h1 {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        header h1 span {
+            color: var(--accent-light);
+        }
+
+        header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: clamp(0.8rem, 2vw, 1rem);
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 900px) {
+            .main-grid {
+                grid-template-columns: 280px 1fr;
+                gap: 20px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 300px 1fr;
+                gap: 24px;
+            }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            order: 2;
+        }
+
+        @media (min-width: 900px) {
+            .sidebar {
+                order: 1;
+                gap: 16px;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (min-width: 768px) {
+            .card {
+                padding: 20px;
+                border-radius: 12px;
+            }
+        }
+
+        .card-title {
+            font-size: clamp(0.95rem, 2vw, 1.1rem);
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--accent-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* Platform Selection */
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        @media (min-width: 480px) and (max-width: 899px) {
+            .platform-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .platform-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 6px;
+            background: var(--bg-input);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: clamp(0.75rem, 1.5vw, 0.9rem);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .platform-btn:hover {
+            background: rgba(109, 40, 217, 0.2);
+            border-color: var(--primary-light);
+            transform: translateY(-2px);
+        }
+
+        .platform-btn.active {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            border-color: var(--primary-light);
+            box-shadow: 0 4px 15px rgba(109, 40, 217, 0.4);
+        }
+
+        .platform-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        /* Search Section */
+        .search-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            transition: all 0.2s ease;
+            min-width: 0;
+        }
+
+        @media (min-width: 768px) {
+            .search-input {
+                padding: 12px 16px;
+                border-radius: 10px;
+            }
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.2);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-btn, .play-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+
+        @media (min-width: 768px) {
+            .search-btn, .play-btn {
+                padding: 12px 20px;
+                border-radius: 10px;
+            }
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        .play-btn {
+            background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+        }
+
+        .search-btn:hover, .play-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(109, 40, 217, 0.4);
+        }
+
+        .search-hint {
+            font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .url-section {
+            margin-top: 6px;
+        }
+
+        /* Parser Selection */
+        .parser-list {
+            max-height: 250px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        @media (min-width: 900px) {
+            .parser-list {
+                max-height: 350px;
+                gap: 6px;
+            }
+        }
+
+        .parser-list::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .parser-list::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        .parser-list::-webkit-scrollbar-track {
+            background: var(--bg-input);
+            border-radius: 3px;
+        }
+
+        .parser-item {
+            padding: 8px 10px;
+            background: var(--bg-input);
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+            color: var(--text-primary);
+        }
+
+        @media (min-width: 768px) {
+            .parser-item {
+                padding: 10px 12px;
+                border-radius: 8px;
+            }
+        }
+
+        .parser-item:hover {
+            background: rgba(109, 40, 217, 0.2);
+            border-color: var(--primary-light);
+        }
+
+        .parser-item.active {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            border-color: var(--primary-light);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            order: 1;
+        }
+
+        @media (min-width: 900px) {
+            .main-content {
+                order: 2;
+                gap: 16px;
+            }
+        }
+
+        /* Player */
+        .player-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 */
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (min-width: 768px) {
+            .player-container {
+                border-radius: 12px;
+            }
+        }
+
+        .player-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .player-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: var(--text-secondary);
+            padding: 20px;
+        }
+
+        .player-placeholder-icon {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .player-placeholder-text {
+            font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+            text-align: center;
+        }
+
+        .player-placeholder-sub {
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+            margin-top: 8px;
+            opacity: 0.7;
+            text-align: center;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+
+        @media (min-width: 600px) {
+            .status-bar {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px 16px;
+                border-radius: 10px;
+            }
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .status-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+
+        .status-text {
+            color: var(--text-secondary);
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
+        }
+
+        .status-text span {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .refresh-btn {
+            padding: 8px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            white-space: nowrap;
+        }
+
+        @media (min-width: 768px) {
+            .refresh-btn {
+                padding: 8px 16px;
+                border-radius: 8px;
+            }
+        }
+
+        .refresh-btn:hover {
+            background: var(--border);
+        }
+
+        /* Hot Videos */
+        .hot-videos {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        @media (min-width: 480px) {
+            .hot-videos {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 768px) {
+            .hot-videos {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 12px;
+            }
+        }
+
+        .hot-video-item {
+            padding: 10px;
+            background: var(--bg-input);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        @media (min-width: 768px) {
+            .hot-video-item {
+                padding: 12px;
+            }
+        }
+
+        .hot-video-item:hover {
+            background: rgba(109, 40, 217, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .hot-video-title {
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hot-video-source {
+            font-size: clamp(0.65rem, 1.5vw, 0.8rem);
+            color: var(--text-secondary);
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: var(--primary-light);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @media (min-width: 768px) {
+            .spinner {
+                width: 50px;
+                height: 50px;
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 90vw;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .toast {
+                bottom: 30px;
+                padding: 12px 24px;
+                border-radius: 10px;
+                font-size: 0.9rem;
+            }
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 16px;
+            margin-top: 16px;
+            color: var(--text-secondary);
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+        }
+
+        @media (min-width: 768px) {
+            footer {
+                padding: 20px;
+                margin-top: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 全网<span>视频解析</span>播放器</h1>
+            <p>支持爱奇艺、腾讯、优酷、B站等主流视频平台 · 完全免费 · 高清播放</p>
+        </header>
+
+        <div class="main-grid">
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-title">选择平台</div>
+                    <div class="platform-grid">
+                        <button class="platform-btn active" data-platform="iqiyi" data-search="https://so.iqiyi.com/so/q_">
+                            <span class="platform-icon" style="background: #00be06;">爱</span>
+                            爱奇艺
+                        </button>
+                        <button class="platform-btn" data-platform="qq" data-search="https://v.qq.com/x/search/?q=">
+                            <span class="platform-icon" style="background: #ff6a00;">腾</span>
+                            腾讯视频
+                        </button>
+                        <button class="platform-btn" data-platform="youku" data-search="https://so.youku.com/search_video/q_">
+                            <span class="platform-icon" style="background: #2ab8ff;">优</span>
+                            优酷
+                        </button>
+                        <button class="platform-btn" data-platform="bilibili" data-search="https://search.bilibili.com/all?keyword=">
+                            <span class="platform-icon" style="background: #fb7299;">B</span>
+                            哔哩哔哩
+                        </button>
+                        <button class="platform-btn" data-platform="mgtv" data-search="https://so.mgtv.com/so/k_">
+                            <span class="platform-icon" style="background: #ff5722;">芒</span>
+                            芒果TV
+                        </button>
+                        <button class="platform-btn" data-platform="sohu" data-search="https://so.tv.sohu.com/so/q_">
+                            <span class="platform-icon" style="background: #e60012;">搜</span>
+                            搜狐视频
+                        </button>
+                        <button class="platform-btn" data-platform="pptv" data-search="https://search.pptv.com/search?kw=">
+                            <span class="platform-icon" style="background: #0099ff;">P</span>
+                            PPTV
+                        </button>
+                        <button class="platform-btn" data-platform="le" data-search="https://so.le.com/s?wd=">
+                            <span class="platform-icon" style="background: #e4393c;">乐</span>
+                            乐视
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">搜索视频</div>
+                    <div class="search-section">
+                        <div class="search-input-group">
+                            <input type="text" class="search-input" id="searchInput" placeholder="输入视频名称...">
+                            <button class="search-btn" id="searchBtn">搜索</button>
+                        </div>
+                        <div class="search-hint">
+                            点击搜索将在新窗口打开平台搜索页面，找到视频后复制链接粘贴到下方输入框
+                        </div>
+                        <div class="url-section">
+                            <div class="search-input-group">
+                                <input type="text" class="search-input" id="videoUrl" placeholder="粘贴视频页面链接...">
+                                <button class="play-btn" id="playBtn">播放</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">选择解析源</div>
+                    <div class="parser-list" id="parserList"></div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="player-container" id="playerContainer">
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="player-placeholder" id="playerPlaceholder">
+                        <div class="player-placeholder-icon">🎬</div>
+                        <div class="player-placeholder-text">选择平台并搜索视频</div>
+                        <div class="player-placeholder-sub">或直接粘贴视频链接开始播放</div>
+                    </div>
+                    <iframe id="playerFrame" style="display: none;" allowfullscreen></iframe>
+                </div>
+
+                <div class="status-bar">
+                    <div class="status-info">
+                        <div class="status-dot" id="statusDot"></div>
+                        <div class="status-text">
+                            当前状态：<span id="statusText">等待播放</span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="refresh-btn" id="refreshBtn">🔄 刷新</button>
+                        <button class="refresh-btn" id="newWindowBtn">🪟 新窗口</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">热门推荐</div>
+                    <div class="hot-videos" id="hotVideos"></div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>⚠️ 本工具仅供学习交流使用，请支持正版视频内容</p>
+            <p style="margin-top: 4px;">解析接口来源于网络，仅供学习研究用途</p>
+        </footer>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const PARSE_SOURCES = [
+            { name: "默认A（推荐）", url: "https://json.fongmi.cc/web?url=" },
+            { name: "默认B", url: "https://super.playr.top/?url=" },
+            { name: "CK解析", url: "https://www.ckplayer.vip/jiexi/?url=" },
+            { name: "Player-JY", url: "https://jx.playerjy.com/?url=" },
+            { name: "虾米解析", url: "https://jx.xmflv.com/?url=" },
+            { name: "789解析", url: "https://jiexi.789jiexi.icu:4433/?url=" },
+            { name: "937解析", url: "https://bfq.937auth.vip?url=" },
+            { name: "HLS解析", url: "https://jx.hls.one/?url=" },
+            { name: "极速解析", url: "https://jx.2s0.cn/player/?url=" },
+            { name: "冰豆解析", url: "https://bd.jx.cn/?url=" },
+            { name: "剖元解析", url: "https://www.pouyun.com/?url=" },
+            { name: "973解析", url: "https://jx.973973.xyz/?url=" },
+            { name: "七哥解析", url: "https://jx.nnxv.cn/tv.php?url=" },
+            { name: "playm3u8", url: "https://www.playm3u8.cn/jiexi.php?url=" },
+            { name: "七七云解析", url: "https://jx.77flv.cc/?url=" },
+            { name: "芒果TV1", url: "https://video.isyour.love/player/getplayer?url=" },
+            { name: "M1907", url: "https://im1907.top/?jx=" },
+            { name: "Yparse", url: "https://jx.yparse.com/index.php?url=" }
+        ];
+
+        const HOT_VIDEOS = [
+            { title: "爱奇艺热门电影", url: "https://www.iqiyi.com/" },
+            { title: "腾讯热播剧集", url: "https://v.qq.com/" },
+            { title: "B站热门番剧", url: "https://www.bilibili.com/anime/" },
+            { title: "优酷独播剧", url: "https://www.youku.com/" },
+            { title: "芒果TV综艺", url: "https://www.mgtv.com/" },
+            { title: "搜狐美剧", url: "https://tv.sohu.com/" }
+        ];
+
+        let currentPlatform = "iqiyi";
+        let currentParserIndex = 0;
+        let currentVideoUrl = "";
+
+        const platformBtns = document.querySelectorAll(".platform-btn");
+        const searchInput = document.getElementById("searchInput");
+        const searchBtn = document.getElementById("searchBtn");
+        const videoUrlInput = document.getElementById("videoUrl");
+        const playBtn = document.getElementById("playBtn");
+        const parserList = document.getElementById("parserList");
+        const playerFrame = document.getElementById("playerFrame");
+        const playerPlaceholder = document.getElementById("playerPlaceholder");
+        const loading = document.getElementById("loading");
+        const statusDot = document.getElementById("statusDot");
+        const statusText = document.getElementById("statusText");
+        const refreshBtn = document.getElementById("refreshBtn");
+        const newWindowBtn = document.getElementById("newWindowBtn");
+        const hotVideos = document.getElementById("hotVideos");
+        const toast = document.getElementById("toast");
+
+        function initParsers() {
+            parserList.innerHTML = PARSE_SOURCES.map((source, index) => `
+                <div class="parser-item ${index === 0 ? 'active' : ''}" data-index="${index}">
+                    ${source.name}
+                </div>
+            `).join("");
+
+            document.querySelectorAll(".parser-item").forEach(item => {
+                item.addEventListener("click", () => {
+                    document.querySelectorAll(".parser-item").forEach(i => i.classList.remove("active"));
+                    item.classList.add("active");
+                    currentParserIndex = parseInt(item.dataset.index);
+                    showToast(`已切换到：${PARSE_SOURCES[currentParserIndex].name}`);
+                    if (currentVideoUrl) playVideo(currentVideoUrl);
+                });
+            });
+        }
+
+        function initHotVideos() {
+            hotVideos.innerHTML = HOT_VIDEOS.map(video => `
+                <div class="hot-video-item" data-url="${video.url}">
+                    <div class="hot-video-title">${video.title}</div>
+                    <div class="hot-video-source">点击前往</div>
+                </div>
+            `).join("");
+
+            document.querySelectorAll(".hot-video-item").forEach(item => {
+                item.addEventListener("click", () => {
+                    window.open(item.dataset.url, "_blank");
+                });
+            });
+        }
+
+        platformBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                platformBtns.forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                currentPlatform = btn.dataset.platform;
+                showToast(`已选择：${btn.textContent.trim()}`);
+            });
+        });
+
+        searchBtn.addEventListener("click", () => {
+            const query = searchInput.value.trim();
+            if (!query) {
+                showToast("请输入搜索内容");
+                return;
+            }
+            const activeBtn = document.querySelector(".platform-btn.active");
+            const searchUrl = activeBtn.dataset.search + encodeURIComponent(query);
+            window.open(searchUrl, "_blank");
+            showToast("已在新窗口打开搜索页面");
+        });
+
+        searchInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") searchBtn.click();
+        });
+
+        playBtn.addEventListener("click", () => {
+            const url = videoUrlInput.value.trim();
+            if (!url) {
+                showToast("请输入视频链接");
+                return;
+            }
+            if (!isValidUrl(url)) {
+                showToast("请输入有效的视频链接");
+                return;
+            }
+            currentVideoUrl = url;
+            playVideo(url);
+        });
+
+        videoUrlInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") playBtn.click();
+        });
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function playVideo(url) {
+            const parser = PARSE_SOURCES[currentParserIndex];
+            const parseUrl = parser.url + encodeURIComponent(url);
+
+            loading.classList.add("active");
+            playerPlaceholder.style.display = "none";
+            playerFrame.style.display = "block";
+            statusDot.classList.add("active");
+            statusText.textContent = `正在使用 ${parser.name} 解析播放`;
+            playerFrame.src = parseUrl;
+
+            setTimeout(() => loading.classList.remove("active"), 2000);
+            showToast(`正在使用 ${parser.name} 解析`);
+        }
+
+        refreshBtn.addEventListener("click", () => {
+            if (currentVideoUrl) {
+                playVideo(currentVideoUrl);
+                showToast("正在刷新播放器");
+            } else {
+                showToast("暂无视频播放");
+            }
+        });
+
+        newWindowBtn.addEventListener("click", () => {
+            if (currentVideoUrl) {
+                const parser = PARSE_SOURCES[currentParserIndex];
+                window.open(parser.url + encodeURIComponent(currentVideoUrl), "_blank");
+                showToast("已在新窗口打开");
+            } else {
+                showToast("暂无视频播放");
+            }
+        });
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add("show");
+            setTimeout(() => toast.classList.remove("show"), 3000);
+        }
+
+        initParsers();
+        initHotVideos();
+    </script>
+</body>
+</html>
